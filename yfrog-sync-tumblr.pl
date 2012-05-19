@@ -15,6 +15,7 @@ use Data::Dumper;
 use JSON;
 use YAML;
 use OAuth::Lite::Consumer;
+use Getopt::Long;
 
 {
 	no warnings 'redefine';
@@ -49,22 +50,37 @@ my $pit_tumblr = pit_get("www.tumblr.com", require => {
 	consumer_secret => 'tumblr oAuth consumer secret',
 });
 
-if ( $ARGV[0] && $ARGV[0] =~ /^conf/i ) {
-	Config::Pit::set("yfrog.com", config => $pit_yfrog);
-	Config::Pit::set("www.tumblr.com", config => $pit_tumblr);
-}
-
 main();
 
 # ---------------------------------------------------------------
 sub main {
+	# re-config
+	my $config;
+	GetOptions('config' => \$config);
+	if ( $config ) {
+		Config::Pit::set("yfrog.com", config => $pit_yfrog);
+		Config::Pit::set("www.tumblr.com", config => $pit_tumblr);
+	}
+
+	# get Tumblr consumer and test it.
 	my $tumblr_consumer = tumblr_oauth_getconsumer($pit_tumblr);
 	if ( ! tumblr_oauth_testconsumer( $pit_tumblr, $tumblr_consumer ) ) {
 		tumblr_oauth_authenticate( $pit_tumblr );
 	}
 
+	# get yfrog processed hashes
 	my $yfrog_hashes = hash_from_dump();
-	my $photos = get_yfrog_photos($pit_yfrog, $yfrog_hashes);
+
+	my $photos;
+	if ( @ARGV ) {
+		# prepare yfrog photo hashes from argv.
+		$photos = [reverse map { {
+			photo_link => ($_ =~ /^https?:/ ? '' : 'http://yfrog.com/') . $_
+		} } @ARGV];
+	} else {
+		# get new yfrog photo hashes from yfrog web.
+		$photos = get_yfrog_photos($pit_yfrog, $yfrog_hashes);
+	}
 	print @$photos . " photos marked to upload.\n";
 
 	foreach ( reverse @$photos ) {
@@ -87,7 +103,7 @@ sub main {
 				slug => $pit_tumblr->{slug_prefix} . $hash,
 				source => $url,
 				caption => $info->{message},
-			});
+			}, $_->{photo_link});
 			$yfrog_hashes->{$hash} = 1;
 			hash_to_dump( $yfrog_hashes );
 		}
@@ -196,6 +212,8 @@ sub post_tumblr {
 	my $tumblr = shift;
 	my $consumer = shift;
 	my $param = shift;
+	my $yfrog_url = shift;
+
 	my $res = $consumer->request(
 		method => 'POST',
 		url    => sprintf('http://api.tumblr.com/v2/blog/%s/post', $tumblr->{host_name}),
@@ -207,7 +225,7 @@ sub post_tumblr {
 		eval {
 			my $json = decode_json( $res->decoded_content() );
 			if (grep 'Error uploading photo.', @{ $json->{response}->{errors} }) {
-				print "'Error uploading photo.' for $param->{slug}. the error ignored.\n";
+				print "'Error uploading photo.' for $yfrog_url. the error ignored.\n";
 				$ignore = 1;
 			}
 		};
