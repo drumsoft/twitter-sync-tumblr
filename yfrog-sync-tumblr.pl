@@ -16,6 +16,7 @@ use JSON;
 use YAML;
 use OAuth::Lite::Consumer;
 use Getopt::Long;
+use File::Basename;
 
 {
 	no warnings 'redefine';
@@ -28,7 +29,7 @@ use Getopt::Long;
 # global settings
 my %preference = (
 	yfrog_pagesize => 25,
-	yfrog_hashdump => '.dump.' . __FILE__,
+	yfrog_hashdump => '.dump.yfrog-sync-tumblr.pl',
 	tumblr_oauth => {
 		site               => q{http://www.tumblr.com},
 		request_token_path => q{/oauth/request_token},
@@ -36,6 +37,9 @@ my %preference = (
 		authorize_path     => q{/oauth/authorize},
 	},
 );
+
+# global
+my $quiet = 0;
 
 # get keys from Pit
 my $pit_yfrog = pit_get("yfrog.com", require => {
@@ -50,14 +54,30 @@ my $pit_tumblr = pit_get("www.tumblr.com", require => {
 	consumer_secret => 'tumblr oAuth consumer secret',
 });
 
-main();
+# ---------------------------------------------------------------
+sub say($) {
+	my $text = shift;
+	if ( ! $quiet ) {
+		printf STDOUT "%s\n", $text;
+	}
+	return $text;
+}
+sub sayerror($) {
+	my $text = shift;
+	my ($pkg, $file, $line) = caller;
+	$file = basename($file);
+	printf STDERR "[%s error] %s in line %d\n", $file, $text, $line;
+	return $text;
+}
 
 # ---------------------------------------------------------------
+main();
 sub main {
 	# re-config
 	my $config;
-	GetOptions('config' => \$config);
+	GetOptions('config' => \$config, 'quiet' => \$quiet);
 	if ( $config ) {
+		die 'You cannot edit config while quiet mode.' if $quiet;
 		Config::Pit::set("yfrog.com", config => $pit_yfrog);
 		Config::Pit::set("www.tumblr.com", config => $pit_tumblr);
 	}
@@ -65,6 +85,7 @@ sub main {
 	# get Tumblr consumer and test it.
 	my $tumblr_consumer = tumblr_oauth_getconsumer($pit_tumblr);
 	if ( ! tumblr_oauth_testconsumer( $pit_tumblr, $tumblr_consumer ) ) {
+		die 'Tumblr oAuth required.' if $quiet;
 		tumblr_oauth_authenticate( $pit_tumblr );
 	}
 
@@ -81,11 +102,11 @@ sub main {
 		# get new yfrog photo hashes from yfrog web.
 		$photos = get_yfrog_photos($pit_yfrog, $yfrog_hashes);
 	}
-	print @$photos . " photos marked to upload.\n";
+	say (@$photos . " photos marked to upload.");
 
 	foreach ( reverse @$photos ) {
 		if ( $_->{photo_link} =~ m|/([^/]+)$| ) {
-			print "upload: $_->{photo_link}\n";
+			say "upload: $_->{photo_link}";
 			my $hash = $1;
 			my $info = get_yfrog_photoinfo($pit_yfrog, $hash);
 			if ( ! defined $info ) {
@@ -124,7 +145,7 @@ sub get_yfrog_photos {
 		my $url = sprintf 
 			'http://yfrog.com/api/userphotos.json?limit=%d&page=%d&screen_name=%s&devkey=%s', 
 			$preference{yfrog_pagesize}, $page, $yfrog->{screen_name}, $yfrog->{devkey};
-		print "loading yfrog page $page.\n";
+		say "loading yfrog page $page.";
 		my $result = http_get_json( $url );
 		if ( ! $result->{success} ) {
 			die 'yfrog photos retrive error:' . YAML::Dump($result);
@@ -225,7 +246,7 @@ sub post_tumblr {
 		eval {
 			my $json = decode_json( $res->decoded_content() );
 			if (grep 'Error uploading photo.', @{ $json->{response}->{errors} }) {
-				print "'Error uploading photo.' for $yfrog_url. the error ignored.\n";
+				sayerror "'Error uploading photo.' for $yfrog_url. the error ignored.";
 				$ignore = 1;
 			}
 		};
@@ -246,8 +267,6 @@ sub http_get_json {
 	}
 	decode_json( $response->content );
 }
-
-
 
 # -------------------------------------------------------- Tumblr oAuth 
 sub tumblr_oauth_getconsumer {
@@ -299,7 +318,7 @@ sub tumblr_oauth_testconsumer {
 sub tumblr_oauth_authenticate {
 	my $tumblr = shift;
 
-	print "\nTumblr oAuth process start.\n\n";
+	say "\nTumblr oAuth process start.\n";
 
 	my $consumer = OAuth::Lite::Consumer->new(
 		consumer_key    => $tumblr->{consumer_key},
@@ -314,10 +333,10 @@ sub tumblr_oauth_authenticate {
 	my $url = $consumer->url_to_authorize(
 		token => $request_token,
 	);
-	print "1. access this URL with your browser and authorize.\n";
-	print "  $url\n\n";
+	say "1. access this URL with your browser and authorize.";
+	say "  $url\n";
 
-	print "2. input url your browser be redirected to.\n";
+	say "2. input url your browser be redirected to.";
 	my $redirected = <STDIN>;
 	chomp $redirected;
 	my %redirected_param = map { 
@@ -333,7 +352,7 @@ sub tumblr_oauth_authenticate {
 	$tumblr->{access_token} = $access_token->as_encoded;
 	Config::Pit::set("www.tumblr.com", data => $tumblr);
 
-	print "\naccess token saved. Tumblr oAuth process completed.\n\n";
+	say "\naccess token saved. Tumblr oAuth process completed.\n";
 	exit(0);
 }
 
@@ -359,5 +378,4 @@ sub hash_to_dump {
 	print $fh "\n1;\n";
 	close $fh;
 }
-
 
