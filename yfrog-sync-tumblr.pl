@@ -77,7 +77,8 @@ sub main {
 	my $config;
 	GetOptions('config' => \$config, 'quiet' => \$quiet);
 	if ( $config ) {
-		die 'You cannot edit config while quiet mode.' if $quiet;
+		die 'EDITOR is not set. try "export EDITOR=emacs" or what you like.' if ! defined $ENV{EDITOR} || ! $ENV{EDITOR};
+		die 'config is not editable while quiet mode.' if $quiet;
 		Config::Pit::set("yfrog.com", config => $pit_yfrog);
 		Config::Pit::set("www.tumblr.com", config => $pit_tumblr);
 	}
