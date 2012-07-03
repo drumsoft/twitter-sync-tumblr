@@ -118,7 +118,9 @@ sub main {
 			}
 			my $url  = get_yfrog_fullsizeimageurl($hash);
 			
-			post_tumblr( $pit_tumblr, $tumblr_consumer, {
+			post_tumblr( $pit_tumblr, $tumblr_consumer, 
+#			print YAML::Dump(
+			{
 				type => 'photo',
 				tags => $pit_tumblr->{tags},
 				date => tumblr_datetime( $info->{created_time} ),
