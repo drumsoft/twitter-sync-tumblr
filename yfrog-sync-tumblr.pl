@@ -218,7 +218,7 @@ sub get_yfrog_fullsizeimageurl {
 	my $imagescraper = scraper {
 		process "#the-image img", "url" => '@src'
 	};
-	my $res = $imagescraper->scrape( URI->new('http://yfrog.com/z/' . $hash) );
+	my $res = $imagescraper->scrape( URI->new('http://twitter.yfrog.com/z/' . $hash) );
 
 	$res->{url}->as_string;
 }
