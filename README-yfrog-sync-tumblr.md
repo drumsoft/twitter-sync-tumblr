@@ -1,3 +1,7 @@
+このファイルは yfrog-sync-tumblr.pl の解説です。 yfrog が Twitter 公式アプリの画像アップロード先として採用されなくなり yfrog 自体の仕様も変更されつつあるため、こちらは deprecated となります。
+
+まだ残っている yfrog のデータを tumblr に移動させるためには使えるかもしれません。(2013/06/25 時点で使用できました)
+
 # 概要
 
 yfrog-sync-tumblr は、 yfrog にアップされた写真を Tumblr にアップロードするスクリプトです。
