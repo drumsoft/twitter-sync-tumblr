@@ -177,6 +177,7 @@ sub get_net_twitter {
 	if ( ! defined $net_twitter_instance ) {
 		$net_twitter_instance = Net::Twitter->new(
 			traits   => [qw/OAuth API::RESTv1_1/], 
+			ssl      => 1, 
 			consumer_key        => $pit_twitter->{consumer_key}, 
 			consumer_secret     => $pit_twitter->{consumer_secret}, 
 			access_token        => $pit_twitter->{access_token}, 
