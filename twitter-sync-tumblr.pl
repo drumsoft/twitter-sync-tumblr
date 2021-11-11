@@ -31,7 +31,7 @@ my %preference = (
 	twitter_pagesize => 200,
 	twitter_pageslimit => 20,
 	tumblr_oauth => {
-		site               => q{http://www.tumblr.com},
+		site               => q{https://www.tumblr.com},
 		request_token_path => q{/oauth/request_token},
 		access_token_path  => q{/oauth/access_token},
 		authorize_path     => q{/oauth/authorize},
@@ -161,7 +161,7 @@ sub extract_medias_from_tweet {
 					text        => $tw->{text}, 
 					created_at  => parse_time($tw->{created_at}), #Mon Jun 24 22:52:38 +0000 2013
 					screen_name => $pit_twitter->{screen_name},
-					tweet_url   => 'http://twitter.com/' . $pit_twitter->{screen_name} . '/status/' . $tw->{id_str},
+					tweet_url   => 'https://twitter.com/' . $pit_twitter->{screen_name} . '/status/' . $tw->{id_str},
 				};
 			} else {
 				say 'unknown media type' . $md->{type};
@@ -264,7 +264,7 @@ sub post_tumblr {
 
 	my $res = $consumer->request(
 		method => 'POST',
-		url    => sprintf('http://api.tumblr.com/v2/blog/%s/post', $tumblr->{host_name}),
+		url    => sprintf('https://api.tumblr.com/v2/blog/%s/post', $tumblr->{host_name}),
 		params => $param,
 	);
 
@@ -311,7 +311,7 @@ sub tumblr_oauth_testconsumer {
 
 	my $res = $consumer->request(
 		method => 'GET',
-		url    => sprintf('http://api.tumblr.com/v2/blog/%s/followers', $tumblr->{host_name}),
+		url    => sprintf('https://api.tumblr.com/v2/blog/%s/followers', $tumblr->{host_name}),
 		params => { limit => 0 },
 	);
 
