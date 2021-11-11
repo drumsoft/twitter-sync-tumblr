@@ -1,0 +1,12 @@
+requires 'Config::Pit';
+requires 'DateTime::Format::DateParse';
+requires 'Encode';
+requires 'Getopt::Long';
+requires 'JSON';
+requires 'LWP::UserAgent';
+requires 'Math::BigInt';
+requires 'Net::Twitter';
+requires 'OAuth::Lite::Consumer';
+requires 'URI';
+requires 'Web::Scraper';
+requires 'YAML';
